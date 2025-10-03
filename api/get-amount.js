@@ -6,10 +6,6 @@ const stripe = Stripe(
 );
 
 export default async function handler(req, res) {
-  // DEBUG: Eingehender und gespeicherter Token ausgeben (nicht in Produktion belassen!)
-  console.log("Empfangener Token:", req.query.api_token);
-  console.log("Gespeicherter Token:", process.env.API_TOKEN);
-
   // Sichere Token-Prüfung über Umgebungsvariable
   if (req.query.api_token !== process.env.API_TOKEN) {
     return res.status(403).json({ error: 'Unauthorized' });
@@ -29,6 +25,8 @@ export default async function handler(req, res) {
       amount: (session.amount_total || 0) / 100,
       currency: session.currency || '',
       orderId: session.id,
+      customer_email: session.customer_details?.email || '',
+      payment_status: session.payment_status || '',
       products: lineItems.map(item => ({
         name: item.description,
         price: (item.amount_total || 0) / 100,
