@@ -1,25 +1,23 @@
 const Stripe = require('stripe');
-const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
+
+// Automatischer Fallback: live → test
+const stripe = Stripe(
+  process.env.STRIPE_SECRET_KEY_LIVE || process.env.STRIPE_SECRET_KEY
+);
 
 export default async function handler(req, res) {
-  // API-Token prüfen
-  if (req.query.api_token !== 'mysecret123') {
+  // Sichere Token-Prüfung über Umgebungsvariable
+  if (req.query.api_token !== process.env.API_TOKEN) {
     return res.status(403).json({ error: 'Unauthorized' });
   }
 
   try {
     const sessionId = req.query.session_id;
 
-    let session;
-    try {
-      // Erster Versuch mit expand
-      session = await stripe.checkout.sessions.retrieve(sessionId, {
-        expand: ['line_items'],
-      });
-    } catch (expandErr) {
-      console.warn("⚠️ line_items konnte nicht geladen werden, fallback wird verwendet");
-      session = await stripe.checkout.sessions.retrieve(sessionId);
-    }
+    // Session inkl. Produkte abrufen
+    const session = await stripe.checkout.sessions.retrieve(sessionId, {
+      expand: ['line_items'],
+    });
 
     const lineItems = session.line_items?.data || [];
 
@@ -34,13 +32,11 @@ export default async function handler(req, res) {
       })),
     });
   } catch (err) {
-    // ❗ Vollständiges Logging in Vercel
+    // Fehlerlogging für Debug
     console.error("❌ FEHLER IN SERVERLESS FUNCTION:", err);
 
-    // ❗ Antwort mit Details für Debug-Zwecke
     res.status(500).json({
       error: err.message || 'Unbekannter Fehler',
-      details: err,
     });
   }
 }
