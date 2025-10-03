@@ -1,14 +1,23 @@
 const Stripe = require('stripe');
 
-// Automatischer Fallback: live → test
 const stripe = Stripe(
   process.env.STRIPE_SECRET_KEY_LIVE || process.env.STRIPE_SECRET_KEY
 );
 
 export default async function handler(req, res) {
-  // Sichere Token-Prüfung über Umgebungsvariable
+  // CORS-Header hinzufügen
+  res.setHeader("Access-Control-Allow-Origin", "https://www.institut-sitya.at");
+  res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+
+  // Preflight-Request abfangen
+  if (req.method === "OPTIONS") {
+    return res.status(200).end();
+  }
+
+  // API-Token prüfen
   if (req.query.api_token !== process.env.API_TOKEN) {
-    return res.status(403).json({ error: 'Unauthorized' });
+    return res.status(403).json({ error: "Unauthorized" });
   }
 
   try {
