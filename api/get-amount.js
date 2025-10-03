@@ -6,6 +6,10 @@ const stripe = Stripe(
 );
 
 export default async function handler(req, res) {
+  // DEBUG: Eingehender und gespeicherter Token ausgeben (nicht in Produktion belassen!)
+  console.log("Empfangener Token:", req.query.api_token);
+  console.log("Gespeicherter Token:", process.env.API_TOKEN);
+
   // Sichere Token-Prüfung über Umgebungsvariable
   if (req.query.api_token !== process.env.API_TOKEN) {
     return res.status(403).json({ error: 'Unauthorized' });
@@ -32,9 +36,7 @@ export default async function handler(req, res) {
       })),
     });
   } catch (err) {
-    // Fehlerlogging für Debug
     console.error("❌ FEHLER IN SERVERLESS FUNCTION:", err);
-
     res.status(500).json({
       error: err.message || 'Unbekannter Fehler',
     });
